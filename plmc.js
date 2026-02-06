@@ -237,8 +237,8 @@ async function main() {
         tx.outs.forEach(out => {
           if (out.script[0] === bitcoin.opcodes.OP_RETURN) {
             const data = out.script.slice(2); // Skip OP_RETURN and length
-            if (data.slice(0, 4).equals(MESSAGE_PREFIX)) {
-              encoded = data.slice(4).toString();
+            if (Buffer.from(data.slice(0, 4)).equals(MESSAGE_PREFIX)) {
+              encoded = Buffer.from(data.slice(4)).toString();
             }
           }
         });
@@ -246,7 +246,7 @@ async function main() {
         if (encoded) {
           // Get sender pubkey from first input witness
           if (tx.ins[0].witness && tx.ins[0].witness.length === 2) {
-            const senderPubKey = tx.ins[0].witness[1].toString('hex');
+            const senderPubKey = Buffer.from(tx.ins[0].witness[1]).toString('hex');
             try {
               const text = decryptMessage(encoded, senderPubKey, keyPair.privateKey);
               messages.push({ from: senderPubKey, text, txid: item.tx_hash });
