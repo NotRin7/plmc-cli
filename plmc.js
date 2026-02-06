@@ -191,22 +191,22 @@ async function main() {
           index: utxo.tx_pos,
           witnessUtxo: {
             script: script,
-            value: utxo.value
+            value: BigInt(utxo.value)
           }
         });
         totalInput += utxo.value;
       }
 
-      psbt.addOutput({ script: opReturnScript, value: 0 });
+      psbt.addOutput({ script: opReturnScript, value: BigInt(0) });
       
       const { address: recipientAddr } = bitcoin.payments.p2wpkh({ 
         pubkey: Buffer.from(recipientPubKey, 'hex'), 
         network: PALLADIUM_NETWORK 
       });
-      psbt.addOutput({ address: recipientAddr, value: 1000 }); // Dust-ish payment
+      psbt.addOutput({ address: recipientAddr, value: BigInt(1000) }); // Dust-ish payment
 
       const fee = 500; // Simplified fee for CLI
-      psbt.addOutput({ address, value: totalInput - 1000 - fee });
+      psbt.addOutput({ address, value: BigInt(totalInput - 1000 - fee) });
 
       psbt.signAllInputs(keyPair);
       psbt.finalizeAllInputs();
