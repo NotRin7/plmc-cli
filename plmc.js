@@ -235,10 +235,11 @@ async function main() {
 
         let encoded = '';
         tx.outs.forEach(out => {
-          if (out.script[0] === bitcoin.opcodes.OP_RETURN) {
-            const data = out.script.slice(2); // Skip OP_RETURN and length
-            if (Buffer.from(data.slice(0, 4)).equals(MESSAGE_PREFIX)) {
-              encoded = Buffer.from(data.slice(4)).toString();
+          const decompiled = bitcoin.script.decompile(out.script);
+          if (decompiled && decompiled[0] === bitcoin.opcodes.OP_RETURN && Buffer.isBuffer(decompiled[1])) {
+            const data = decompiled[1];
+            if (data.slice(0, 4).equals(MESSAGE_PREFIX)) {
+              encoded = data.slice(4).toString();
             }
           }
         });
