@@ -1,8 +1,11 @@
 {
   "name": "plmc-cli",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "Command-line interface for encrypted, on-chain messaging on the Palladium blockchain.",
+  "main": "plmc.js",
+  "bin": {
+    "plmc": "./plmc.js"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
