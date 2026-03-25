@@ -145,7 +145,7 @@ async function main() {
       const { address } = bitcoin.payments.p2wpkh({ pubkey: keyPair.publicKey, network: PALLADIUM_NETWORK });
       console.log(JSON.stringify({
         address,
-        pubKey: keyPair.publicKey.toString('hex')
+        pubKey: Buffer.from(keyPair.publicKey).toString('hex')
       }, null, 2));
     });
 
@@ -190,23 +190,23 @@ async function main() {
           hash: utxo.tx_hash,
           index: utxo.tx_pos,
           witnessUtxo: {
-            script: script,
-            value: utxo.value
+            script: Buffer.from(script),
+            value: BigInt(utxo.value)
           }
         });
         totalInput += utxo.value;
       }
 
-      psbt.addOutput({ script: opReturnScript, value: 0 });
+      psbt.addOutput({ script: opReturnScript, value: BigInt(0) });
       
       const { address: recipientAddr } = bitcoin.payments.p2wpkh({ 
         pubkey: Buffer.from(recipientPubKey, 'hex'), 
         network: PALLADIUM_NETWORK 
       });
-      psbt.addOutput({ address: recipientAddr, value: 1000 }); // Dust-ish payment
+      psbt.addOutput({ address: recipientAddr, value: BigInt(1000) }); // Dust-ish payment
 
       const fee = 500; // Simplified fee for CLI
-      psbt.addOutput({ address, value: totalInput - 1000 - fee });
+      psbt.addOutput({ address, value: BigInt(totalInput - 1000 - fee) });
 
       psbt.signAllInputs(keyPair);
       psbt.finalizeAllInputs();
@@ -236,9 +236,10 @@ async function main() {
         let encoded = '';
         tx.outs.forEach(out => {
           if (out.script[0] === bitcoin.opcodes.OP_RETURN) {
-            const data = out.script.slice(2); // Skip OP_RETURN and length
-            if (data.slice(0, 4).equals(MESSAGE_PREFIX)) {
-              encoded = data.slice(4).toString();
+            const scriptBuf = Buffer.from(out.script);
+            const idx = scriptBuf.indexOf(MESSAGE_PREFIX);
+            if (idx !== -1) {
+              encoded = scriptBuf.slice(idx + 4).toString();
             }
           }
         });
@@ -246,11 +247,13 @@ async function main() {
         if (encoded) {
           // Get sender pubkey from first input witness
           if (tx.ins[0].witness && tx.ins[0].witness.length === 2) {
-            const senderPubKey = tx.ins[0].witness[1].toString('hex');
+            const senderPubKey = Buffer.from(tx.ins[0].witness[1]).toString('hex');
             try {
               const text = decryptMessage(encoded, senderPubKey, keyPair.privateKey);
               messages.push({ from: senderPubKey, text, txid: item.tx_hash });
-            } catch (e) {}
+            } catch (e) {
+               messages.push({ from: senderPubKey, text: "[DECRYPT FAILED] " + encoded, txid: item.tx_hash });
+            }
           }
         }
       }
